@@ -8,6 +8,8 @@ The model implements the zero-dimensional isentropic formulation of:
 
 The tool reproduces every benchmark case of the paper (see [Validation](#9-validation-against-the-paper)).
 
+**Try it online:** <https://alfonsopagani.github.io/airdeco/>, or run it locally from a copy of this repository (see [Getting started](#1-getting-started)).
+
 ---
 
 ## Contents
@@ -30,39 +32,46 @@ The tool reproduces every benchmark case of the paper (see [Validation](#9-valid
 
 ## 1. Getting started
 
-AirDeco is a static web page with no build step and no server.
+AirDeco is a static web page with no build step and no server. You can use it in two ways:
 
-- **Local use:** download or clone the repository and open `index.html` in a recent browser (Chrome, Edge, Firefox or Safari). Everything runs on your machine. An internet connection is only used to load the web fonts; without it the page falls back to system fonts.
-- **Hosted use:** publish the repository with GitHub Pages (Settings → Pages → deploy from branch) and open the page URL.
+- **Online:** open <https://alfonsopagani.github.io/airdeco/>. There is nothing to install, and the calculation still runs entirely in your browser.
+- **Locally:** download or clone the repository and open `index.html` in a recent browser (Chrome, Edge, Firefox or Safari). Everything runs on your machine and works offline: an internet connection is only used to load the web fonts, and without it the page falls back to system fonts.
+
+To host your own copy (for example a modified version), publish the repository with GitHub Pages (Settings → Pages → deploy from branch) and open the page URL.
 
 On first load the tool opens the **four-compartment aircraft** of the paper (§5.4) and runs it immediately, so you see a complete example before changing anything. Your last configuration is remembered by the browser and restored the next time you open the page.
 
 ## 2. Interface overview
 
 ```
-┌──────────────────────────────────────────────────────────────────────────────┐
-│ AirDeco   Case ▾   kPa ▾   m ▾   Save   Open…               ▶ Run analysis   │  top bar
-├──────────────────────────┬───────────────────────────────────────────────────┤
-│ 1 Flight conditions      │  Aircraft schematic (side view, animated)         │
-│ 2 Cabin initial state    │  ▶ Play ───────●────────────────  t = 18.3 ms     │
-│ 3 Compartments           │  Status · Download CSV · Copy CSV · Copy summary  │
-│ 4 Breaches & vents       │  Key results (peak Δp, times, min T, …)           │
-│ 5 Thermodynamics & solver│  Benchmark check (built-in cases only)            │
-│                          │  Time histories (8 interactive charts)            │
-│      input rail          │  Tables: Compartments · Vents & panels · Δp matrix│
-│                          │  Model and equations                              │
-└──────────────────────────┴───────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────────────────────────────┐
+│ AirDeco   Case [Four-compartment v]  [kPa v] [m v]  Save  Open...  [> Run analysis]   │
+├────────────────────────────────┬──────────────────────────────────────────────────────┤
+│ 1 Flight conditions            │ Aircraft schematic (side view, animated)             │
+│   [ ISA altitude | Manual ]    │ [> Play] -------o-----------------  t = 18.3 ms      │
+│ 2 Cabin initial state          │ Status | Download CSV | Copy CSV | Copy summary      │
+│   [ Abs. p | Cabin alt | Δp ]  │ Key results (peak Δp, times, min T, ...)             │
+│ 3 Compartments                 │ Benchmark check (built-in cases only)                │
+│ 4 Breaches & vents             │ Time histories (8 linked charts)                     │
+│ 5 Thermodynamics & solver      │ Tables: Compartments | Vents & panels | Δp matrix    │
+│                                │ Model and equations (full column width)              │
+│   input rail                   │                                                      │
+│   (scrolls on its own)         │                                                      │
+├────────────────────────────────┴──────────────────────────────────────────────────────┤
+│ Footer: model reference · developed with the assistance of Claude                     │
+└───────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
 - **Top bar.** *Case* loads one of the benchmark configurations. The two unit menus set the pressure unit (kPa, psi, hPa) and altitude unit (m, ft) used in results; inputs are always in the SI-based units printed next to each field. *Save* and *Open…* store and restore configurations. *Run analysis* starts a calculation.
-- **Input rail (left).** Five numbered sections that follow the order in which you set up a case. Each section header shows a one-line summary and can be collapsed. On wide screens the rail scrolls on its own, so the results stay in view.
-- **Results (right).** The schematic, key results, charts and tables. On phones the results come first and the inputs follow below.
+- **Input rail (left).** Five numbered sections that follow the order in which you set up a case. Each section header shows a one-line summary and can be collapsed. Where a section offers alternative ways of entering data (ambient definition, cabin pressure definition, thermodynamic model), a selector bar spans the full width of the panel with one equal-width button per option; click anywhere on a button to switch, and the active option is highlighted. On wide screens the rail scrolls on its own, so the results stay in view.
+- **Results (right).** The schematic, key results, charts and tables, followed by the *Model and equations* section, which is collapsed by default and spans the full column width when opened. On phones the results come first and the inputs follow below.
+- **Footer.** The reference to the underlying model, a reminder that results support preliminary design, and a note that the tool was developed with the assistance of Claude.
 
 ## 3. Step-by-step: setting up an analysis
 
 ### Step 1 — Flight conditions (ambient)
 
-Choose how the outside air is defined:
+Choose how the outside air is defined with the selector bar at the top of the panel (*ISA altitude* or *Manual*):
 
 | Mode | Fields | Notes |
 |---|---|---|
@@ -75,7 +84,7 @@ Switching mode carries the current state over, so the conditions do not jump.
 
 ### Step 2 — Cabin initial state
 
-The initial pressure can be entered in three equivalent ways:
+The initial pressure can be entered in three equivalent ways, chosen with the selector bar at the top of the panel:
 
 | Mode | Field |
 |---|---|
@@ -141,7 +150,7 @@ The small drawing on each card shows the selected device with its symbols, as in
 
 | Setting | Default | Meaning |
 |---|---|---|
-| Model | Isentropic | **Isentropic** (*n* = γ, the paper's model, recommended for explosive < 0.5 s and rapid < 10 s events); **Polytropic** with exponent *n* (1.16 from Haber & Clamann for slower events with wall heat transfer and humidity); **Isothermal** (*n* = 1, Mavriplis). |
+| Model (selector bar) | Isentropic | **Isentropic** (*n* = γ, the paper's model, recommended for explosive < 0.5 s and rapid < 10 s events); **Polytropic** with exponent *n* (1.16 from Haber & Clamann for slower events with wall heat transfer and humidity); **Isothermal** (*n* = 1, Mavriplis). |
 | γ | 1.4 | Ratio of specific heats. The hint shows the resulting critical ratio. |
 | R | 287 J/kg K | Gas constant of air. |
 | Time step Δt | 50 µs | Explicit Euler step. 50 µs is the value used in the paper; reduce it for very small volumes or very large breaches (see [§11](#11-assumptions-limits-and-good-practice)). |
@@ -309,7 +318,7 @@ The fuselage is divided into *N* rigid compartments with uniform properties. For
 
 A panel stays shut while the differential across it is below *p*_rel. After release it moves under the instantaneous differential (which may reverse) and stops at its maximum angle; a translational panel keeps moving after its open area reaches *A*_p. To prevent numerical overshoot near equalisation, the mass moved through a vent in one step is limited to half of what would equalise the two sides; this only acts in the last pascals of a transient.
 
-The same equations are listed with their numbers in the *Model and equations* section at the bottom of the page.
+The same equations are listed with their numbers in the *Model and equations* section at the bottom of the results column.
 
 ## 11. Assumptions, limits and good practice
 
@@ -351,6 +360,10 @@ It prints every compared quantity and exits with an error if any deviates from t
 7. Demetriades, S.T. (1954). On the decompression of a punctured cabin in vacuum flight. *Jet Propulsion*.
 8. Streeter, V.L., Wylie, E.B. (1975). *Fluid Mechanics*. McGraw-Hill.
 9. EASA (2014). Certification Specifications and Acceptable Means of Compliance for Large Aeroplanes, CS-25, Amendment 15.
+
+## Acknowledgement
+
+AirDeco was developed with the assistance of [Claude](https://claude.ai), an AI model by Anthropic.
 
 ## License
 
