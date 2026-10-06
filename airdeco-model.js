@@ -93,7 +93,7 @@
         comp('Cockpit', 4, 'main', 0, 14),
         comp('Entryway', 3, 'main', 14, 24),
         comp('Passenger cabin', 198, 'main', 24, 100),
-        comp('Cargo', 67, 'lower', 14, 100),
+        comp('Cargo', 67, 'lower', 0, 100),
       ],
       vents: [
         passive('Entryway breach', 1, -1, 0.6, 0.8),

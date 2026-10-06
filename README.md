@@ -176,7 +176,7 @@ A side view of the fuselage with each compartment drawn at its deck and stations
 
 - **Before a run** compartments are tinted with their series colour and labelled with their volume.
 - **After a run** the fill shows the compartment pressure at the selected time, from light (ambient) to dark (initial cabin pressure), with *p* and *T* printed inside. The colour scale is shown under the drawing.
-- Vents are drawn where compartments meet: on a bulkhead, on the floor, or on the skin for breaches (red star). Hinged panels rotate and translational panels lift as they open. Arrows show the direction of the mass flow, with thickness growing with the flow rate (red for flow to the outside, blue between compartments). Tags *V1, V2…* match the vent cards.
+- Vents are drawn where compartments meet: on a bulkhead, on the floor, or on the skin for breaches (red star). When two connected compartments share no wall (they touch only at a corner, or are apart), the vent is drawn on a duct joining them; adjust the stations to place it on a wall instead. Hinged panels rotate and translational panels lift as they open. Arrows show the direction of the mass flow, with thickness growing with the flow rate (red for flow to the outside, blue between compartments). Tags *V1, V2…* match the vent cards.
 - Hover any item for its details; click it to jump to its input card.
 - Use the **time slider** or **Play** to scrub through the event. The slider covers the time window currently shown in the charts, so zoom the charts to 50 ms to replay the panel openings in slow motion. After a case is loaded the cursor starts at the instant of the peak differential pressure.
 
