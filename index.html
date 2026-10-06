@@ -1,0 +1,541 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AirDeco Decompression Lab</title>
+<meta name="description" content="Rapid and explosive decompression loads of pressurized aircraft with passive and active venting (Pagani & Carrera, 2016).">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: instrument-panel workbench. Inputs in a left rail, aircraft schematic + results on the right. */
+:root {
+  --bg: #eef1f5;
+  --surface: #ffffff;
+  --surface-2: #f5f7fa;
+  --ink: #101a2b;
+  --ink-2: #46536a;
+  --muted: #6b778c;
+  --line: #d6dce5;
+  --line-2: #e6eaf0;
+  --accent: #1c4fd0;
+  --accent-ink: #ffffff;
+  --accent-soft: #e3eafc;
+  --crit: #c3302d;
+  --crit-soft: #fbe6e5;
+  --warn: #9a6400;
+  --good: #23784a;
+  --good-soft: #e2f3e9;
+  --skin: #c3ccd8;
+  --skin-fill: #e4e9f0;
+  --hull: #f8fafc;
+  --grid: #e8ecf1;
+  --ramp-lo: #dbe9fb;
+  --ramp-hi: #1c4f95;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100;
+  --s5: #e87ba4; --s6: #008300; --s7: #4a3aa7; --s8: #e34948;
+  --shadow: 0 1px 2px rgba(16, 26, 43, .06), 0 4px 14px rgba(16, 26, 43, .05);
+
+  --f-display: "Barlow Semi Condensed", "Arial Narrow", "Roboto Condensed", system-ui, sans-serif;
+  --f-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --f-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --r: 8px;
+  --gutter: 16px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0c121c; --surface: #131b28; --surface-2: #182233; --ink: #e7ecf4; --ink-2: #a8b3c5; --muted: #7d899d;
+    --line: #283447; --line-2: #1f2a3b; --accent: #7b9cff; --accent-ink: #0c121c; --accent-soft: #1c2a4d;
+    --crit: #ff6d66; --crit-soft: #3a1c1e; --warn: #e3a63a; --good: #4cc983; --good-soft: #143223;
+    --skin: #3a4860; --skin-fill: #1c2637; --hull: #101826; --grid: #1e293a;
+    --ramp-lo: #1a2940; --ramp-hi: #6aa5f0;
+    --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+    --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 14px rgba(0, 0, 0, .25);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0c121c; --surface: #131b28; --surface-2: #182233; --ink: #e7ecf4; --ink-2: #a8b3c5; --muted: #7d899d;
+  --line: #283447; --line-2: #1f2a3b; --accent: #7b9cff; --accent-ink: #0c121c; --accent-soft: #1c2a4d;
+  --crit: #ff6d66; --crit-soft: #3a1c1e; --warn: #e3a63a; --good: #4cc983; --good-soft: #143223;
+  --skin: #3a4860; --skin-fill: #1c2637; --hull: #101826; --grid: #1e293a;
+  --ramp-lo: #1a2940; --ramp-hi: #6aa5f0;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  --shadow: 0 1px 2px rgba(0, 0, 0, .3), 0 4px 14px rgba(0, 0, 0, .25);
+  color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  background: var(--bg); color: var(--ink);
+  font: 14px/1.5 var(--f-body);
+  padding-inline: var(--gutter); padding-block: 0 32px;
+}
+h1, h2, h3 { font-family: var(--f-display); text-wrap: balance; margin: 0; letter-spacing: .01em; }
+.num, input[type=number], .mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+button, input, select { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.label { font-family: var(--f-display); font-weight: 600; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+/* ---------- Top bar ---------- */
+.topbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+  margin-inline: calc(-1 * var(--gutter)); padding: 10px var(--gutter);
+  background: color-mix(in srgb, var(--bg) 88%, transparent);
+  backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px;
+}
+.brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.brand svg { flex: none; }
+.brand h1 { font-size: 22px; font-weight: 700; line-height: 1; }
+.brand h1 span { color: var(--accent); }
+.brand p { margin: 2px 0 0; font-size: 12px; color: var(--muted); }
+.topbar .spacer { flex: 1; }
+.toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+
+.btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  border: 1px solid var(--line); background: var(--surface); color: var(--ink);
+  padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 500; white-space: nowrap;
+}
+.btn:hover { border-color: var(--ink-2); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn.ghost { background: transparent; }
+.btn.small { padding: 3px 8px; font-size: 12px; }
+.btn.danger:hover { border-color: var(--crit); color: var(--crit); }
+.btn[disabled] { opacity: .45; cursor: default; }
+select.sel {
+  border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 6px 8px; font-size: 13px; max-width: 100%;
+}
+
+/* ---------- Main grid ---------- */
+.app { display: grid; grid-template-columns: minmax(0, 430px) minmax(0, 1fr); gap: 18px; margin-top: 16px; align-items: start; }
+@media (max-width: 1080px) { .app { grid-template-columns: minmax(0, 1fr); } .main { order: -1; } }
+@media (min-width: 1081px) {
+  .rail { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 72px); max-height: calc(100vh - 88px); overflow-y: auto; padding-right: 4px; scrollbar-width: thin; }
+}
+.rail { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.main { display: flex; flex-direction: column; gap: 16px; min-width: 0; }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); box-shadow: var(--shadow); min-width: 0; }
+.panel > summary, .panel-head {
+  list-style: none; cursor: pointer; display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; user-select: none;
+}
+.panel-head { cursor: default; }
+.panel > summary::-webkit-details-marker { display: none; }
+.panel > summary h2, .panel-head h2 { font-size: 17px; font-weight: 600; }
+.panel > summary .step {
+  font-family: var(--f-mono); font-size: 11px; color: var(--accent); border: 1px solid var(--accent); border-radius: 4px; padding: 0 5px; line-height: 18px;
+}
+.panel > summary .meta, .panel-head .meta { margin-left: auto; font-size: 12px; color: var(--muted); text-align: right; }
+.panel > summary .chev { transition: transform .15s; color: var(--muted); }
+.panel[open] > summary .chev { transform: rotate(90deg); }
+.panel-body { padding: 4px 14px 14px; display: flex; flex-direction: column; gap: 12px; }
+
+/* ---------- Form fields ---------- */
+.fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 10px 12px; }
+.fields.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.field { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.field > span { font-size: 12px; color: var(--ink-2); display: block; min-height: 18px; }
+.field > span i { float: right; margin-left: 6px; font-style: normal; color: var(--muted); font-family: var(--f-mono); font-size: 11px; }
+.field input, .field select {
+  width: 100%; min-width: 0; border: 1px solid var(--line); background: var(--surface-2);
+  border-radius: 6px; padding: 6px 8px; font-size: 13px;
+}
+.field input:hover, .field select:hover { border-color: var(--muted); }
+.field input:focus, .field select:focus { border-color: var(--accent); background: var(--surface); outline: none; box-shadow: 0 0 0 3px var(--accent-soft); }
+.field input.bad { border-color: var(--crit); }
+.field .hint { font-size: 11px; color: var(--muted); font-family: var(--f-mono); min-height: 1em; }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface-2); flex-wrap: wrap; }
+.seg button { border: 0; background: transparent; padding: 5px 10px; font-size: 12px; cursor: pointer; color: var(--ink-2); }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.readout {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px 12px;
+  background: var(--surface-2); border: 1px dashed var(--line); border-radius: 6px; padding: 8px 10px;
+}
+.readout div { display: flex; flex-direction: column; }
+.readout b { font-family: var(--f-mono); font-weight: 500; font-size: 13px; }
+.readout small { font-size: 11px; color: var(--muted); }
+.chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; padding: 1px 8px; border-radius: 99px; }
+.chip.ok { background: var(--good-soft); color: var(--good); }
+.chip.bad { background: var(--crit-soft); color: var(--crit); }
+.chip::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+/* list cards (compartments & vents) */
+.items { display: flex; flex-direction: column; gap: 10px; }
+.item { border: 1px solid var(--line); border-radius: 8px; background: var(--surface); transition: border-color .2s, box-shadow .2s; min-width: 0; }
+.item.flash { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+.item-head { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-bottom: 1px solid var(--line-2); }
+.item-head input.name { flex: 1; min-width: 0; border: 1px solid transparent; background: transparent; font-weight: 600; padding: 3px 6px; border-radius: 5px; }
+.item-head input.name:hover { border-color: var(--line); }
+.item-head input.name:focus { border-color: var(--accent); outline: none; background: var(--surface-2); }
+.item-body { padding: 10px; display: flex; flex-direction: column; gap: 10px; }
+.tag {
+  flex: none; display: inline-grid; place-items: center; min-width: 26px; height: 22px; padding: 0 6px; border-radius: 5px;
+  font: 600 12px/1 var(--f-mono); color: #fff;
+}
+.tag.vent { background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line); }
+.iconbtn { border: 0; background: transparent; color: var(--muted); cursor: pointer; padding: 4px; border-radius: 5px; display: inline-grid; place-items: center; }
+.iconbtn:hover { color: var(--crit); background: var(--crit-soft); }
+details.more > summary { cursor: pointer; font-size: 12px; color: var(--accent); list-style: none; }
+details.more > summary::-webkit-details-marker { display: none; }
+details.more > summary::before { content: "+ "; font-family: var(--f-mono); }
+details.more[open] > summary::before { content: "− "; }
+details.more > .fields { margin-top: 8px; }
+.vent-grid { display: grid; grid-template-columns: minmax(0, 1fr) 118px; gap: 10px; align-items: start; }
+@media (max-width: 460px) { .vent-grid { grid-template-columns: minmax(0, 1fr); } .vent-grid .diagram { display: none; } }
+.diagram { border: 1px solid var(--line-2); border-radius: 6px; background: var(--surface-2); padding: 4px; }
+.diagram svg { display: block; width: 100%; height: auto; }
+.diagram figcaption { font-size: 10px; color: var(--muted); text-align: center; line-height: 1.3; padding: 2px; }
+.row-actions { display: flex; flex-wrap: wrap; gap: 8px; }
+.note { font-size: 12px; color: var(--muted); margin: 0; }
+
+/* ---------- Schematic ---------- */
+.schem-wrap { padding: 4px 12px 10px; }
+.schem-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.schem-svg .comp { cursor: pointer; }
+.schem-svg .comp rect.cell { transition: fill .12s linear; }
+.schem-svg .vent-g { cursor: pointer; }
+.schem-svg text { font-family: var(--f-body); }
+.schem-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 16px; padding: 0 14px 12px; font-size: 12px; color: var(--ink-2); }
+.schem-legend svg { vertical-align: middle; }
+.ramp { display: inline-flex; align-items: center; gap: 6px; }
+.ramp i { display: inline-block; width: 110px; height: 10px; border-radius: 3px; background: linear-gradient(90deg, var(--ramp-lo), var(--ramp-hi)); border: 1px solid var(--line); }
+.scrub { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-top: 1px solid var(--line-2); flex-wrap: wrap; }
+.scrub input[type=range] { flex: 1; min-width: 160px; accent-color: var(--accent); }
+.scrub .tread { font-family: var(--f-mono); font-size: 13px; min-width: 92px; text-align: right; }
+
+/* ---------- Run bar & results ---------- */
+.runbar { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; padding: 10px 14px; }
+.status { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 8px; min-width: 0; }
+.status .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--good); flex: none; }
+.status.stale .dot { background: var(--warn); }
+.status.err { color: var(--crit); }
+.status.err .dot { background: var(--crit); }
+.status.busy .dot { background: var(--accent); animation: pulse 1s infinite; }
+@keyframes pulse { 50% { opacity: .3; } }
+@media (prefers-reduced-motion: reduce) { .status.busy .dot { animation: none; } * { transition: none !important; } }
+
+.kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(138px, 1fr)); gap: 10px; }
+.kpi { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.kpi .v { font: 600 26px/1.15 var(--f-display); font-variant-numeric: tabular-nums; }
+.kpi .v small { font-size: 14px; font-weight: 500; color: var(--ink-2); margin-left: 3px; }
+.kpi .d { font-size: 12px; color: var(--muted); }
+.kpi.alert { border-color: color-mix(in srgb, var(--crit) 45%, var(--line)); }
+.kpi.alert .v { color: var(--crit); }
+
+.validate table td.dev { font-weight: 600; }
+.validate .ok { color: var(--good); }
+.validate .off { color: var(--warn); }
+
+.charts-head { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; padding: 12px 14px; border-bottom: 1px solid var(--line-2); }
+.charts-head h2 { font-size: 17px; font-weight: 600; margin-right: auto; }
+.charts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0; }
+@media (max-width: 760px) { .charts { grid-template-columns: minmax(0, 1fr); } }
+.chart { padding: 12px 14px 8px; border-bottom: 1px solid var(--line-2); min-width: 0; }
+.charts > .chart:nth-child(odd) { border-right: 1px solid var(--line-2); }
+@media (max-width: 760px) { .charts > .chart:nth-child(odd) { border-right: 0; } }
+.chart-top { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; margin-bottom: 6px; }
+.chart-top h3 { font-size: 15px; font-weight: 600; }
+.chart-top .unit { font-size: 12px; color: var(--muted); font-family: var(--f-mono); }
+.chart-top .seg { margin-left: auto; }
+.legend { display: flex; flex-wrap: wrap; gap: 2px 4px; margin-bottom: 4px; }
+.legend button {
+  display: inline-flex; align-items: center; gap: 5px; border: 0; background: transparent; cursor: pointer;
+  font-size: 11.5px; color: var(--ink-2); padding: 2px 6px; border-radius: 4px;
+}
+.legend button:hover { background: var(--surface-2); }
+.legend button[aria-pressed="false"] { opacity: .4; }
+.legend button[aria-pressed="false"] svg { filter: grayscale(1); }
+.plot { position: relative; height: 230px; touch-action: pan-y; }
+.plot canvas { position: absolute; inset: 0; width: 100%; height: 100%; }
+.plot canvas.ov { cursor: crosshair; }
+.tip {
+  position: absolute; pointer-events: none; z-index: 5; background: var(--surface); border: 1px solid var(--line);
+  box-shadow: var(--shadow); border-radius: 6px; padding: 6px 8px; font-size: 11.5px; min-width: 150px; max-width: 260px;
+}
+.tip .t { font-family: var(--f-mono); color: var(--muted); margin-bottom: 3px; }
+.tip .r { display: flex; align-items: center; gap: 6px; justify-content: space-between; }
+.tip .r span:first-child { display: inline-flex; align-items: center; gap: 5px; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tip .r b { font-family: var(--f-mono); font-weight: 500; }
+.tip i.sw { width: 10px; height: 3px; border-radius: 2px; flex: none; display: inline-block; }
+
+.tbl-wrap { overflow-x: auto; }
+table.data { border-collapse: collapse; width: 100%; font-size: 12.5px; }
+table.data th, table.data td { padding: 6px 10px; text-align: right; border-bottom: 1px solid var(--line-2); white-space: nowrap; }
+table.data th { font-family: var(--f-display); font-weight: 600; font-size: 12px; letter-spacing: .04em; color: var(--ink-2); background: var(--surface-2); position: sticky; top: 0; }
+table.data th:first-child, table.data td:first-child { text-align: left; }
+table.data td { font-family: var(--f-mono); font-variant-numeric: tabular-nums; }
+table.data td.txt { font-family: var(--f-body); }
+table.data tbody tr:hover td { background: var(--surface-2); }
+table.data td .sw { display: inline-block; width: 9px; height: 9px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
+table.data td.hot { color: var(--crit); font-weight: 600; }
+.matrix td { text-align: center !important; }
+.matrix td.diag { color: var(--muted); }
+.subtabs { display: flex; gap: 2px; padding: 8px 14px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.subtabs button { border: 0; background: transparent; padding: 8px 12px; cursor: pointer; font: 600 13px var(--f-display); letter-spacing: .03em; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+.subtabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
+
+.theory { padding: 4px 18px 18px; max-width: 900px; }
+.theory p, .theory li { color: var(--ink-2); max-width: 72ch; }
+.theory h3 { font-size: 15px; margin-top: 18px; }
+.eq { display: flex; align-items: center; gap: 16px; padding: 8px 12px; margin: 8px 0; background: var(--surface-2); border-radius: 6px; overflow-x: auto; }
+.eq math { font-size: 16px; flex: 1; }
+.eq .n { font-family: var(--f-mono); font-size: 12px; color: var(--muted); }
+.refs li { margin-bottom: 4px; font-size: 13px; }
+
+.toast {
+  position: fixed; left: 50%; bottom: calc(18px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%) translateY(20px);
+  background: var(--ink); color: var(--bg); padding: 8px 14px; border-radius: 6px; font-size: 13px; opacity: 0; transition: .2s; pointer-events: none; z-index: 50; max-width: calc(100% - 32px);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.err-box { border: 1px solid var(--crit); background: var(--crit-soft); color: var(--crit); border-radius: 6px; padding: 8px 12px; font-size: 13px; }
+.err-box.warn { border-color: var(--warn); background: var(--surface); color: var(--warn); }
+footer { margin-top: 24px; font-size: 12px; color: var(--muted); text-align: center; }
+footer a { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true">
+      <rect x="1" y="1" width="32" height="32" rx="7" fill="var(--accent)"/>
+      <path d="M6 20 C6 15 10 13 14 13 L26 13 C28 13 29.5 14 30 16 L30 18 C29 19.5 27 21 24 21 L9 21 C7.5 21 6 20.6 6 20 Z" fill="var(--accent-ink)"/>
+      <path d="M17 13 L17 21 M22 13 L22 21" stroke="var(--accent)" stroke-width="1.6"/>
+      <path d="M24 8 L27 8 L29 13 L25 13 Z" fill="var(--accent-ink)"/>
+    </svg>
+    <div>
+      <h1>Air<span>Deco</span></h1>
+      <p>Decompression loads with passive &amp; active venting</p>
+    </div>
+  </div>
+  <div class="spacer"></div>
+  <div class="toolbar">
+    <label class="label" for="preset">Case</label>
+    <select id="preset" class="sel" title="Load a benchmark case"></select>
+    <select id="unitP" class="sel" title="Pressure unit for results">
+      <option value="kPa">kPa</option><option value="psi">psi</option><option value="hPa">hPa</option>
+    </select>
+    <select id="unitAlt" class="sel" title="Altitude unit for results">
+      <option value="m">m</option><option value="ft">ft</option>
+    </select>
+    <button class="btn" id="btnSave" title="Download the configuration as JSON">Save</button>
+    <button class="btn" id="btnLoad" title="Load a configuration JSON file">Open…</button>
+    <input type="file" id="fileLoad" accept=".json,application/json" hidden>
+    <button class="btn primary" id="btnRun">
+      <svg width="12" height="12" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1 L11 6 L2 11 Z" fill="currentColor"/></svg>
+      Run analysis
+    </button>
+  </div>
+</header>
+
+<div class="app">
+  <!-- ================= INPUT RAIL ================= -->
+  <aside class="rail" id="rail">
+    <details class="panel" open id="secFlight">
+      <summary><span class="step">1</span><h2>Flight conditions</h2><span class="meta" id="metaFlight"></span><span class="chev">›</span></summary>
+      <div class="panel-body">
+        <div class="seg" role="group" aria-label="Ambient definition">
+          <button type="button" data-seg="ambient.mode" data-val="isa">ISA altitude</button>
+          <button type="button" data-seg="ambient.mode" data-val="manual">Manual</button>
+        </div>
+        <div class="fields two" id="ambIsa">
+          <label class="field"><span>Flight altitude <i>m</i></span><input id="f_alt" type="number" step="any" inputmode="decimal" data-bind="ambient.alt_m"><em class="hint" id="h_alt"></em></label>
+          <label class="field"><span>ISA deviation <i>K</i></span><input id="f_disa" type="number" step="any" inputmode="decimal" data-bind="ambient.dISA"><em class="hint"></em></label>
+        </div>
+        <div class="fields two" id="ambMan">
+          <label class="field"><span>Ambient pressure p<sub>a</sub> <i>kPa</i></span><input id="f_pa" type="number" step="any" inputmode="decimal" data-bind="ambient.p_kPa"><em class="hint" id="h_pa"></em></label>
+          <label class="field"><span>Ambient temperature T<sub>a</sub> <i>°C</i></span><input id="f_ta" type="number" step="any" inputmode="decimal" data-bind="ambient.T_C"><em class="hint"></em></label>
+        </div>
+        <div class="readout" id="roAmb"></div>
+      </div>
+    </details>
+
+    <details class="panel" open id="secCabin">
+      <summary><span class="step">2</span><h2>Cabin initial state</h2><span class="meta" id="metaCabin"></span><span class="chev">›</span></summary>
+      <div class="panel-body">
+        <div class="seg" role="group" aria-label="Cabin pressure definition">
+          <button type="button" data-seg="cabin.mode" data-val="abs">Absolute p</button>
+          <button type="button" data-seg="cabin.mode" data-val="alt">Cabin altitude</button>
+          <button type="button" data-seg="cabin.mode" data-val="dp">Differential</button>
+        </div>
+        <div class="fields two">
+          <label class="field" id="w_cabAbs"><span>Cabin pressure p<sub>c</sub><sup>0</sup> <i>kPa</i></span><input id="f_pc" type="number" step="any" inputmode="decimal" data-bind="cabin.p_kPa"><em class="hint"></em></label>
+          <label class="field" id="w_cabAlt"><span>Cabin altitude <i>m</i></span><input id="f_calt" type="number" step="any" inputmode="decimal" data-bind="cabin.alt_m"><em class="hint" id="h_calt"></em></label>
+          <label class="field" id="w_cabDp"><span>p<sub>c</sub><sup>0</sup> − p<sub>a</sub> <i>kPa</i></span><input id="f_cdp" type="number" step="any" inputmode="decimal" data-bind="cabin.dp_kPa"><em class="hint" id="h_cdp"></em></label>
+          <label class="field"><span>Cabin temperature T<sub>c</sub><sup>0</sup> <i>°C</i></span><input id="f_tc" type="number" step="any" inputmode="decimal" data-bind="cabin.T_C"><em class="hint"></em></label>
+        </div>
+        <div class="readout" id="roCab"></div>
+      </div>
+    </details>
+
+    <details class="panel" open id="secComp">
+      <summary><span class="step">3</span><h2>Compartments</h2><span class="meta" id="metaComp"></span><span class="chev">›</span></summary>
+      <div class="panel-body">
+        <p class="note">Each compartment is a control volume of constant size. Deck and station (% of fuselage length) only place it on the schematic.</p>
+        <div class="items" id="compList"></div>
+        <div class="row-actions">
+          <button class="btn small" id="addComp">+ Add compartment</button>
+          <button class="btn small ghost" id="arrange" title="Lay compartments out along the fuselage in list order">Auto-arrange schematic</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="panel" open id="secVent">
+      <summary><span class="step">4</span><h2>Breaches &amp; vents</h2><span class="meta" id="metaVent"></span><span class="chev">›</span></summary>
+      <div class="panel-body">
+        <p class="note">A connection to <b>Ambient</b> is a fuselage breach or skin vent. Between compartments, choose a passive opening, a hinged or translational blowout panel, or an ideal vent that opens instantly.</p>
+        <div class="items" id="ventList"></div>
+        <div class="row-actions">
+          <button class="btn small" id="addVent">+ Add vent</button>
+          <button class="btn small" id="addBreach">+ Add breach</button>
+        </div>
+      </div>
+    </details>
+
+    <details class="panel" id="secSolver">
+      <summary><span class="step">5</span><h2>Thermodynamics &amp; solver</h2><span class="meta" id="metaSolver"></span><span class="chev">›</span></summary>
+      <div class="panel-body">
+        <div class="seg" role="group" aria-label="Thermodynamic model">
+          <button type="button" data-seg="thermo" data-val="isentropic">Isentropic</button>
+          <button type="button" data-seg="thermo" data-val="polytropic">Polytropic</button>
+          <button type="button" data-seg="thermo" data-val="isothermal">Isothermal</button>
+        </div>
+        <p class="note" id="thermoNote"></p>
+        <div class="fields">
+          <label class="field" id="w_polyN"><span>Polytropic n</span><input id="f_n" type="number" step="any" inputmode="decimal" data-bind="polyN"><em class="hint">1.16 Haber–Clamann</em></label>
+          <label class="field"><span>Specific heat ratio γ</span><input id="f_gamma" type="number" step="any" inputmode="decimal" data-bind="gamma"><em class="hint" id="h_gamma"></em></label>
+          <label class="field"><span>Gas constant R <i>J/kg K</i></span><input id="f_R" type="number" step="any" inputmode="decimal" data-bind="R"><em class="hint"></em></label>
+          <label class="field"><span>Time step Δt <i>µs</i></span><input id="f_dt" type="number" step="any" inputmode="decimal" data-bind="numerics.dt_us"><em class="hint">paper: 50 µs</em></label>
+          <label class="field"><span>Max. time <i>s</i></span><input id="f_tend" type="number" step="any" inputmode="decimal" data-bind="numerics.tEnd_s"><em class="hint" id="h_steps"></em></label>
+          <label class="field"><span>Equalisation tol. <i>–</i></span><input id="f_tol" type="number" step="any" inputmode="decimal" data-bind="numerics.eqTol"><em class="hint">of initial Δp</em></label>
+        </div>
+        <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input id="f_auto" type="checkbox" data-bind="numerics.autoStop" style="width:auto"> <span>Stop shortly after all compartments reach ambient pressure</span></label>
+        <label class="field" style="flex-direction:row;align-items:center;gap:8px"><input id="f_live" type="checkbox" style="width:auto" checked> <span>Re-run automatically when an input changes</span></label>
+      </div>
+    </details>
+  </aside>
+
+  <!-- ================= MAIN ================= -->
+  <main class="main">
+    <section class="panel" aria-labelledby="schemTitle">
+      <div class="panel-head">
+        <h2 id="schemTitle">Aircraft schematic</h2>
+        <span class="meta" id="schemMeta">Side view · click a compartment or vent to edit it</span>
+      </div>
+      <div class="schem-wrap"><svg class="schem-svg" id="schem" viewBox="0 0 1000 300" role="img" aria-label="Fuselage side view with compartments and vents"></svg></div>
+      <div class="schem-legend" id="schemLegend"></div>
+      <div class="scrub" id="scrub">
+        <button class="btn small" id="play" aria-label="Play decompression">
+          <svg width="10" height="10" viewBox="0 0 12 12" aria-hidden="true"><path d="M2 1 L11 6 L2 11 Z" fill="currentColor"/></svg> Play
+        </button>
+        <input type="range" id="tSlider" min="0" max="1000" value="0" aria-label="Time">
+        <span class="tread" id="tRead">t = 0 ms</span>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="runbar">
+        <div class="status" id="status"><span class="dot"></span><span id="statusText">Ready</span></div>
+        <div style="margin-left:auto" class="row-actions">
+          <button class="btn small" id="btnCsv" title="Download time histories as CSV">Download CSV</button>
+          <button class="btn small" id="btnCopyCsv" title="Copy time histories as CSV">Copy CSV</button>
+          <button class="btn small" id="btnCopySum" title="Copy a text summary of the results">Copy summary</button>
+        </div>
+      </div>
+    </section>
+
+    <div id="errBox" class="err-box" hidden></div>
+    <div id="warnBox" class="err-box warn" hidden></div>
+
+    <section class="kpis" id="kpis" aria-label="Key results"></section>
+
+    <section class="panel validate" id="validate" hidden>
+      <div class="panel-head"><h2>Benchmark check</h2><span class="meta" id="valSource"></span></div>
+      <div class="tbl-wrap"><table class="data" id="valTable"></table></div>
+      <p class="note" style="padding:8px 14px 12px" id="valNote"></p>
+    </section>
+
+    <section class="panel">
+      <div class="charts-head">
+        <h2>Time histories</h2>
+        <span class="label">Window</span>
+        <div class="seg" id="zoomSeg">
+          <button type="button" data-z="0.05">50 ms</button>
+          <button type="button" data-z="0.25">0.25 s</button>
+          <button type="button" data-z="1">1 s</button>
+          <button type="button" data-z="all" aria-pressed="true">All</button>
+        </div>
+        <span class="note">Drag on a chart to zoom · double-click to reset</span>
+      </div>
+      <div class="charts" id="charts"></div>
+    </section>
+
+    <section class="panel">
+      <div class="subtabs" role="tablist" id="tblTabs">
+        <button role="tab" data-tab="tComp" aria-selected="true">Compartments</button>
+        <button role="tab" data-tab="tVent" aria-selected="false">Vents &amp; panels</button>
+        <button role="tab" data-tab="tPair" aria-selected="false">Δp matrix</button>
+      </div>
+      <div class="tbl-wrap" id="tComp"></div>
+      <div class="tbl-wrap" id="tVent" hidden></div>
+      <div class="tbl-wrap" id="tPair" hidden></div>
+    </section>
+
+    <details class="panel" id="secTheory">
+      <summary><h2>Model and equations</h2><span class="meta">Pagani &amp; Carrera (2016)</span><span class="chev">›</span></summary>
+      <div class="theory">
+        <p>The fuselage is split into <i>N</i> rigid compartments, each with uniform pressure, density and temperature (zero-dimensional model). Air flows through breaches and vents, treated as quasi-1D orifices with an effective area <i>A</i><sub>eff</sub> = <i>C</i><sub>D</sub><i>A</i>. The ambient is an infinite reservoir. The breach appears instantaneously at <i>t</i> = 0.</p>
+        <h3>Mass balance</h3>
+        <div class="eq"><math display="block"><mfrac><mrow><mi>d</mi><msub><mi>ρ</mi><mi>i</mi></msub></mrow><mrow><mi>d</mi><mi>t</mi></mrow></mfrac><mo>=</mo><mfrac><mn>1</mn><msub><mi>V</mi><mi>i</mi></msub></mfrac><mo>(</mo><msub><mover><mi>m</mi><mo>˙</mo></mover><mi>in</mi></msub><mo>−</mo><msub><mover><mi>m</mi><mo>˙</mo></mover><mi>out</mi></msub><mo>)</mo></math><span class="n">(7)</span></div>
+        <h3>Orifice flow</h3>
+        <p>Flow from <i>i</i> to <i>j</i> is choked (sonic throat) when <i>p<sub>i</sub></i> ≥ <i>p<sub>i</sub></i><sup>*</sup> = ((γ+1)/2)<sup>γ/(γ−1)</sup> <i>p<sub>j</sub></i> = 1.893 <i>p<sub>j</sub></i>:</p>
+        <div class="eq"><math display="block"><msubsup><mover><mi>m</mi><mo>˙</mo></mover><mrow><mi>i</mi><mi>j</mi></mrow><mo>*</mo></msubsup><mo>=</mo><msub><mi>ρ</mi><mi>i</mi></msub><msup><mrow><mo>(</mo><mfrac><mn>2</mn><mrow><mi>γ</mi><mo>+</mo><mn>1</mn></mrow></mfrac><mo>)</mo></mrow><mfrac><mn>1</mn><mrow><mi>γ</mi><mo>−</mo><mn>1</mn></mrow></mfrac></msup><msub><mi>A</mi><mi>eff</mi></msub><msqrt><mfrac><mrow><mn>2</mn><mi>γ</mi><mi>R</mi><msub><mi>T</mi><mi>i</mi></msub></mrow><mrow><mi>γ</mi><mo>+</mo><mn>1</mn></mrow></mfrac></msqrt></math><span class="n">(4)</span></div>
+        <p>otherwise the flow is subsonic:</p>
+        <div class="eq"><math display="block"><msub><mover><mi>m</mi><mo>˙</mo></mover><mrow><mi>i</mi><mi>j</mi></mrow></msub><mo>=</mo><msub><mi>A</mi><mi>eff</mi></msub><msqrt><mrow><mn>2</mn><msub><mi>p</mi><mi>i</mi></msub><msub><mi>ρ</mi><mi>i</mi></msub><mfrac><mi>γ</mi><mrow><mi>γ</mi><mo>−</mo><mn>1</mn></mrow></mfrac><mrow><mo>[</mo><msup><mrow><mo>(</mo><mfrac><msub><mi>p</mi><mi>j</mi></msub><msub><mi>p</mi><mi>i</mi></msub></mfrac><mo>)</mo></mrow><mfrac><mn>2</mn><mi>γ</mi></mfrac></msup><mo>−</mo><msup><mrow><mo>(</mo><mfrac><msub><mi>p</mi><mi>j</mi></msub><msub><mi>p</mi><mi>i</mi></msub></mfrac><mo>)</mo></mrow><mfrac><mrow><mi>γ</mi><mo>+</mo><mn>1</mn></mrow><mi>γ</mi></mfrac></msup><mo>]</mo></mrow></mrow></msqrt></math><span class="n">(5)</span></div>
+        <h3>Compartment state</h3>
+        <div class="eq"><math display="block"><mfrac><msub><mi>T</mi><mi>i</mi></msub><msubsup><mi>T</mi><mi>c</mi><mn>0</mn></msubsup></mfrac><mo>=</mo><msup><mrow><mo>(</mo><mfrac><msub><mi>p</mi><mi>i</mi></msub><msubsup><mi>p</mi><mi>c</mi><mn>0</mn></msubsup></mfrac><mo>)</mo></mrow><mfrac><mrow><mi>n</mi><mo>−</mo><mn>1</mn></mrow><mi>n</mi></mfrac></msup><mo>=</mo><msup><mrow><mo>(</mo><mfrac><msub><mi>ρ</mi><mi>i</mi></msub><msubsup><mi>ρ</mi><mi>c</mi><mn>0</mn></msubsup></mfrac><mo>)</mo></mrow><mrow><mi>n</mi><mo>−</mo><mn>1</mn></mrow></msup></math><span class="n">(8)</span></div>
+        <p><i>n</i> = γ = 1.4 gives the isentropic model of the paper. <i>n</i> = 1.16 is the polytropic exponent measured by Haber and Clamann (1953); <i>n</i> = 1 is isothermal (Mavriplis 1963).</p>
+        <h3>Hinged blowout panel</h3>
+        <div class="eq"><math display="block"><mfrac><mrow><msup><mi>d</mi><mn>2</mn></msup><mi>θ</mi></mrow><mrow><mi>d</mi><msup><mi>t</mi><mn>2</mn></msup></mrow></mfrac><mo>=</mo><mfrac><mrow><mn>3</mn><mi>Δ</mi><mi>p</mi><msub><mi>A</mi><mi>p</mi></msub><msup><mi>cos</mi><mn>2</mn></msup><mi>θ</mi></mrow><mrow><mn>2</mn><msub><mi>m</mi><mi>p</mi></msub><mi>b</mi></mrow></mfrac><mo>,</mo><mspace width="1em"/><msub><mi>A</mi><mi>open</mi></msub><mo>=</mo><msub><mi>A</mi><mi>p</mi></msub><mo>(</mo><mn>1</mn><mo>−</mo><mi>cos</mi><mi>θ</mi><mo>)</mo></math><span class="n">(12–13)</span></div>
+        <h3>Translational blowout panel</h3>
+        <div class="eq"><math display="block"><mfrac><mrow><msup><mi>d</mi><mn>2</mn></msup><mi>x</mi></mrow><mrow><mi>d</mi><msup><mi>t</mi><mn>2</mn></msup></mrow></mfrac><mo>=</mo><mfrac><mrow><mi>Δ</mi><mi>p</mi><msub><mi>A</mi><mi>p</mi></msub></mrow><msub><mi>m</mi><mi>p</mi></msub></mfrac><mo>,</mo><mspace width="1em"/><msub><mi>A</mi><mi>open</mi></msub><mo>=</mo><mi>min</mi><mrow><mo>[</mo><mn>2</mn><mo>(</mo><mfrac><msub><mi>A</mi><mi>p</mi></msub><mi>b</mi></mfrac><mo>+</mo><mi>b</mi><mo>)</mo><mi>x</mi><mo>,</mo><msub><mi>A</mi><mi>p</mi></msub><mo>]</mo></mrow></math><span class="n">(15–16)</span></div>
+        <p>A panel stays shut until the differential across it exceeds its release pressure <i>p</i><sub>rel</sub>. After release it moves under the instantaneous differential. All equations are integrated with the explicit Euler scheme of Eqs. (17)–(18).</p>
+        <h3>Reported quantities</h3>
+        <ul>
+          <li><b>Supercritical phase</b>: time until every compartment falls below <i>p</i><sup>*</sup> = 1.893 <i>p</i><sub>a</sub>, as in Tables 1 and 2 of the paper. The time during which the breach itself is choked is also listed.</li>
+          <li><b>Total decompression time</b>: time when every compartment is within the equalisation tolerance of ambient pressure.</li>
+          <li><b>Panel opening time</b>: from release until the open area reaches its maximum.</li>
+          <li><b>Partition load</b>: peak |Δp| multiplied by the partition area given on a vent.</li>
+          <li><b>Cabin pressure altitude</b>: ISA altitude with the same static pressure. CS-25 limits cabin altitude to 2438 m (8000 ft) in normal operation.</li>
+        </ul>
+        <h3>References</h3>
+        <ol class="refs">
+          <li>Pagani, A., Carrera, E. (2016). Gasdynamics of rapid and explosive decompressions of pressurized aircraft including active venting. <i>Advances in Aircraft and Spacecraft Science</i>, 3(1), 77–93.</li>
+          <li>Daidzic, N.E., Simones, M.P. (2010). Aircraft decompression with installed cockpit security door. <i>J. Aircraft</i>, 47(2), 490–504.</li>
+          <li>Haber, F., Clamann, H.G. (1953). Physics and engineering of rapid decompression. USAF School of Aviation Medicine, Rept. 3.</li>
+          <li>Mavriplis, F. (1963). Decompression of a pressurized cabin. <i>Can. Aeronaut. Space J.</i>, 9(10), 313–318.</li>
+          <li>Pratt, J.D. (2006). Rapid decompression of pressurized aircraft fuselages. <i>J. Fail. Anal. Prevent.</i>, 6(6), 70–74.</li>
+          <li>EASA (2014). CS-25 Certification Specifications for Large Aeroplanes, Amendment 15.</li>
+        </ol>
+      </div>
+    </details>
+  </main>
+</div>
+
+<footer>AirDeco · zero-dimensional decompression model after Pagani &amp; Carrera, <i>Adv. Aircraft Spacecraft Sci.</i> 3(1) 2016. Results support preliminary design and do not replace certification analysis.</footer>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="airdeco-solver.js"></script>
+<script src="airdeco-model.js"></script>
+<script src="airdeco-app.js"></script>
+</body>
+</html>
