@@ -156,6 +156,11 @@ select.sel {
 .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface-2); flex-wrap: wrap; }
 .seg button { border: 0; background: transparent; padding: 5px 10px; font-size: 12px; cursor: pointer; color: var(--ink-2); }
 .seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+/* option groups in the input rail span the full panel width, equal share per option */
+.panel-body > .seg { display: flex; width: 100%; flex-wrap: nowrap; }
+.panel-body > .seg button { flex: 1 1 0; min-width: 0; padding: 7px 6px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.panel-body > .seg button + button { border-left: 1px solid var(--line); }
+.panel-body > .seg button:hover:not([aria-pressed="true"]) { background: var(--surface); color: var(--ink); }
 .readout {
   display: grid; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); gap: 6px 12px;
   background: var(--surface-2); border: 1px dashed var(--line); border-radius: 6px; padding: 8px 10px;
@@ -283,8 +288,8 @@ table.data td.hot { color: var(--crit); font-weight: 600; }
 .subtabs button { border: 0; background: transparent; padding: 8px 12px; cursor: pointer; font: 600 13px var(--f-display); letter-spacing: .03em; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .subtabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
 
-.theory { padding: 4px 18px 18px; max-width: 900px; }
-.theory p, .theory li { color: var(--ink-2); max-width: 72ch; }
+.theory { padding: 4px 18px 18px; }
+.theory p, .theory li { color: var(--ink-2); }
 .theory h3 { font-size: 15px; margin-top: 18px; }
 .eq { display: flex; align-items: center; gap: 16px; padding: 8px 12px; margin: 8px 0; background: var(--surface-2); border-radius: 6px; overflow-x: auto; }
 .eq math { font-size: 16px; flex: 1; }
@@ -531,7 +536,7 @@ footer a { color: var(--accent); }
   </main>
 </div>
 
-<footer>AirDeco · zero-dimensional decompression model after Pagani &amp; Carrera, <i>Adv. Aircraft Spacecraft Sci.</i> 3(1) 2016. Results support preliminary design and do not replace certification analysis.</footer>
+<footer>AirDeco · zero-dimensional decompression model after Pagani &amp; Carrera, <i>Adv. Aircraft Spacecraft Sci.</i> 3(1) 2016. Results support preliminary design and do not replace certification analysis.<br>This tool was developed with the assistance of <a href="https://claude.ai" target="_blank" rel="noopener">Claude</a>, an AI model by Anthropic.</footer>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="airdeco-solver.js"></script>
