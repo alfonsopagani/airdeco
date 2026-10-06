@@ -438,9 +438,12 @@
         if (touchX != null && yo1 - yo0 > 6) g = { kind: 'v', x: touchX, y: (yo0 + yo1) / 2, nx: B.cx > touchX ? 1 : -1, ny: 0, span: [yo0 + 12, yo1 - 12], axis: 'y' };
         else if (touchY != null && xo1 - xo0 > 6) g = { kind: 'h', x: (xo0 + xo1) / 2, y: touchY, nx: 0, ny: B.cy > touchY ? 1 : -1, span: [xo0 + 14, xo1 - 14], axis: 'x' };
         else if (touchX != null && touchY != null) {
-          const inA = A.w < B.w; const R = inA ? A : B; // put it on the floor of the smaller compartment, next to the corner
-          const x = touchX + (R.cx < touchX ? -16 : 16);
-          g = { kind: 'h', x, y: touchY, nx: 0, ny: B.cy > touchY ? 1 : -1, span: [x, x], axis: 'x' };
+          // compartments meet only at a corner: draw a short diagonal duct across it
+          const dA = [Math.sign(A.cx - touchX), Math.sign(A.cy - touchY)], dB = [Math.sign(B.cx - touchX), Math.sign(B.cy - touchY)];
+          const d = 22;
+          g = { kind: 'link', x: touchX, y: touchY, ax: touchX + dA[0] * d, ay: touchY + dA[1] * d, bx: touchX + dB[0] * d, by: touchY + dB[1] * d, span: null };
+          g.nx = g.bx - g.ax; g.ny = g.by - g.ay;
+          const L = Math.hypot(g.nx, g.ny) || 1; g.nx /= L; g.ny /= L;
         } else {
           g = { kind: 'link', x: (A.cx + B.cx) / 2, y: (A.cy + B.cy) / 2, nx: B.cx - A.cx, ny: B.cy - A.cy, ax: A.cx, ay: A.cy, bx: B.cx, by: B.cy, span: null };
           const L = Math.hypot(g.nx, g.ny) || 1; g.nx /= L; g.ny /= L;
@@ -517,6 +520,8 @@
     parts.push(`<path d="${HULL}" fill="none" stroke="var(--skin)" stroke-width="3"/>`);
     parts.push(`<path d="M44,128 C58,108 78,98 100,94 L104,112 L52,128 Z" fill="var(--skin)" opacity=".75" pointer-events="none"/>`);
     // compartment labels
+    const hotspots = [];
+    vg.forEach((g) => { if (!g) return; hotspots.push([g.x, g.y]); if (g.kind === 'link') hotspots.push([g.ax, g.ay], [g.bx, g.by]); });
     S.cfg.compartments.forEach((c, i) => {
       const R = rects[i];
       const narrow = R.w < 92;
@@ -530,7 +535,11 @@
           lines += `<text x="${R.cx}" y="${cy + 19}" text-anchor="middle" font-size="11" fill="${ink[i][1]}" font-family="var(--f-mono)">${fmt(pU(res.comp[i].p[idx]), 2)} ${pLbl()} · ${fmt(T, 1)} °C</text>`;
         } else lines += `<text x="${R.cx}" y="${cy + 19}" text-anchor="middle" font-size="11" fill="${ink[i][1]}" font-family="var(--f-mono)">${fmt(+c.V, 1)} m³</text>`;
       }
-      const bx = narrow ? R.cx : R.x + 14, by = narrow ? R.cy : R.y + 14;
+      let bx = narrow ? R.cx : R.x + 14, by = narrow ? R.cy : R.y + 14;
+      if (!narrow) {
+        // slide the number badge along the top edge until it clears every vent glyph and duct end
+        for (let j = 0; j < 6 && hotspots.some(([hx, hy]) => Math.hypot(hx - bx, hy - by) < 24); j++) bx += 30;
+      }
       parts.push(`<g pointer-events="none"><circle cx="${bx}" cy="${by}" r="9" fill="${col}" stroke="var(--surface)" stroke-width="1.5"/>
         <text x="${bx}" y="${by + 4}" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="var(--f-mono)">${i + 1}</text>${lines}</g>`);
     });
@@ -593,7 +602,13 @@
         `<path d="M${x} ${y - 5} L${x + 5} ${y} L${x} ${y + 5} L${x - 5} ${y} Z" fill="${open > 0 ? acc : ink}"/>`;
     }
     let link = '';
-    if (g.kind === 'link') link = `<path d="M${g.ax} ${g.ay} L${g.bx} ${g.by}" stroke="var(--muted)" stroke-width="1.2" stroke-dasharray="4 4" fill="none"/>`;
+    if (g.kind === 'link') {
+      // duct joining two compartments that share no wall
+      const duct = `M${g.ax} ${g.ay} L${g.bx} ${g.by}`;
+      link = `<g pointer-events="none"><path d="${duct}" stroke="var(--skin)" stroke-width="10" stroke-linecap="round" fill="none"/>` +
+        `<path d="${duct}" stroke="var(--hull)" stroke-width="5" stroke-linecap="round" fill="none"/>` +
+        `<circle cx="${g.ax}" cy="${g.ay}" r="3" fill="var(--ink-2)"/><circle cx="${g.bx}" cy="${g.by}" r="3" fill="var(--ink-2)"/></g>`;
+    }
     // flow arrow
     let arrow = '';
     if (res && Math.abs(mdot) > 0.004 * mMax) {
