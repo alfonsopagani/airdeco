@@ -965,12 +965,35 @@
   }
 
   /* ============================================================== RESULTS */
-  function renderKpis() {
-    const r = S.result, sm = r.summary, N = r.comp.length;
+  /* Compartment pairs separated by a real partition: joined by a vent, or sharing a wall in the layout.
+     Pairs without a common wall (e.g. cockpit and cabin with an entryway between) load no single structure. */
+  function wallPairs() {
+    const set = new Set(), key = (i, j) => Math.min(i, j) + '-' + Math.max(i, j);
+    S.cfg.vents.forEach((v) => { if (v.a >= 0 && v.b >= 0 && v.a !== v.b) set.add(key(v.a, v.b)); });
+    const R = compRects();
+    for (let i = 0; i < R.length; i++) for (let j = i + 1; j < R.length; j++) {
+      const A = R[i], B = R[j];
+      const yo = Math.min(A.y + A.h, B.y + B.h) - Math.max(A.y, B.y), xo = Math.min(A.x + A.w, B.x + B.w) - Math.max(A.x, B.x);
+      const touchX = Math.abs(A.x + A.w - B.x) < 2 || Math.abs(B.x + B.w - A.x) < 2;
+      const touchY = Math.abs(A.y + A.h - B.y) < 2 || Math.abs(B.y + B.h - A.y) < 2;
+      if ((touchX && yo > 6) || (touchY && xo > 6)) set.add(key(i, j));
+    }
+    return set;
+  }
+  function peakPair(pairs) {
     let best = null;
-    sm.pairs.forEach((q) => {
+    pairs.forEach((q) => {
       const v = Math.max(q.max, -q.min); if (!best || v > best.v) best = { v, q, t: q.max >= -q.min ? q.tMax : q.tMin, sign: q.max >= -q.min };
     });
+    return best;
+  }
+  const pairLabel = (b) => (b.sign ? `p${b.q.i + 1} − p${b.q.j + 1}` : `p${b.q.j + 1} − p${b.q.i + 1}`);
+
+  function renderKpis() {
+    const r = S.result, sm = r.summary, N = r.comp.length;
+    const walls = wallPairs();
+    const best = peakPair(sm.pairs.filter((q) => walls.has(q.i + '-' + q.j)));
+    const bestAny = peakPair(sm.pairs);
     const cTmin = sm.compartments.reduce((a, c, i) => (c.TMin < a.v ? { v: c.TMin, i } : a), { v: Infinity, i: 0 });
     const altMax = Math.max(...sm.compartments.map((c) => c.altMax));
     const breach = sm.vents.filter((v) => v.b < 0);
@@ -978,8 +1001,9 @@
     const loads = sm.vents.filter((v) => isFinite(v.loadMax));
     const tiles = [];
     if (N > 1 && best) {
-      const pairName = best.sign ? `p${best.q.i + 1} − p${best.q.j + 1}` : `p${best.q.j + 1} − p${best.q.i + 1}`;
-      tiles.push({ alert: true, v: fmt(pU(best.v), 2), u: pLbl(), d: `Peak differential, ${pairName} at ${fmtT(best.t)}` });
+      let d = `Peak differential across a partition, ${pairLabel(best)} at ${fmtT(best.t)}`;
+      if (bestAny && bestAny.q !== best.q && bestAny.v > best.v * 1.001) d += `<br><span class="d2">${pairLabel(bestAny)} reaches ${fmt(pU(bestAny.v), 2)}, no shared wall</span>`;
+      tiles.push({ alert: true, v: fmt(pU(best.v), 2), u: pLbl(), d });
     }
     tiles.push({ v: isFinite(sm.tEqualised) ? fmt(sm.tEqualised, sm.tEqualised < 1 ? 4 : 3) : '> ' + fmt(sm.tFinal, 2), u: 's', d: 'Total decompression time' });
     tiles.push({ v: (sm.supercriticalEnded ? '' : '> ') + fmt(sm.tSupercritical, sm.tSupercritical < 1 ? 4 : 3), u: 's', d: `Supercritical phase · breach choked ${fmtT(sm.tChokedBreach)}` });
@@ -1048,17 +1072,21 @@
       }).join('') + '</tbody></table>';
     const N = sm.compartments.length;
     const peak = (i, j) => { const q = sm.pairs.find((q) => q.i === Math.min(i, j) && q.j === Math.max(i, j)); return q ? Math.max(q.max, -q.min) : 0; };
-    let pmax = 0; for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) pmax = Math.max(pmax, peak(i, j));
+    const walls = wallPairs(), shared = (i, j) => walls.has(Math.min(i, j) + '-' + Math.max(i, j));
+    let pmax = 0; for (let i = 0; i < N; i++) for (let j = i + 1; j < N; j++) if (shared(i, j)) pmax = Math.max(pmax, peak(i, j));
     const lo = cssVar('--surface'), hi = cssVar('--s8');
     $('#tPair').innerHTML = N < 2 ? '<p class="note" style="padding:14px">Add a second compartment to see differential pressures between compartments.</p>' :
       `<table class="data matrix"><thead><tr><th>Peak |p<sub>i</sub> − p<sub>j</sub>| (${pl})</th>${sm.compartments.map((c, j) => `<th>${j + 1} · ${esc(c.name)}</th>`).join('')}</tr></thead><tbody>` +
       sm.compartments.map((c, i) => `<tr><td class="txt"><span class="sw" style="background:${seriesColor(i)}"></span>${i + 1} · ${esc(c.name)}</td>` +
         sm.compartments.map((_, j) => {
           if (i === j) return '<td class="diag">·</td>';
-          const v = peak(i, j), f = pmax ? v / pmax : 0;
+          const v = peak(i, j);
+          if (!shared(i, j)) return `<td class="nowall" title="No shared wall: this differential is split across intermediate partitions">(${fmt(pU(v), 2)})</td>`;
+          const f = pmax ? Math.min(1, v / pmax) : 0;
           const m = lo.startsWith('#') && hi.startsWith('#') ? mix(lo, hi, f * 0.75) : { css: 'transparent', lum: 1 };
           return `<td style="background:${m.css};color:${m.lum < 0.55 ? '#fff' : '#101a2b'}">${fmt(pU(v), 2)}</td>`;
-        }).join('') + '</tr>').join('') + '</tbody></table>';
+        }).join('') + '</tr>').join('') + '</tbody></table>' +
+      '<p class="note" style="padding:8px 14px 12px">Shaded cells are compartments separated by a partition (joined by a vent or sharing a wall in the layout). Values in brackets belong to compartments with no common wall; that differential is shared by the partitions in between.</p>';
   }
 
   function summaryText() {
@@ -1072,8 +1100,9 @@
     L.push('Vents:');
     sm.vents.forEach((v, k) => L.push(`  V${k + 1} ${v.name} (${TYPES[v.type]}, ${compName(v.a)} -> ${compName(v.b)}): peak dp +${fmt(v.dpMax / 1e3, 3)} / ${fmt(v.dpMin / 1e3, 3)} kPa, peak mdot ${fmt(v.mdotMax, 3)} kg/s` +
       (v.type !== 'passive' ? `, released ${fmtT(v.tRelease)}, opening ${fmtT(v.openingTime)}` : '') + (isFinite(v.loadMax) ? `, load ${fmt(v.loadMax / 1e3, 2)} kN` : '')));
-    L.push('Peak differential between compartments:');
-    sm.pairs.forEach((q) => L.push(`  p${q.i + 1}-p${q.j + 1}: max ${fmt(q.max / 1e3, 3)} kPa @ ${fmtT(q.tMax)}, min ${fmt(q.min / 1e3, 3)} kPa @ ${fmtT(q.tMin)}`));
+    const walls = wallPairs();
+    L.push('Peak differential between compartments (* = no shared wall):');
+    sm.pairs.forEach((q) => L.push(`  p${q.i + 1}-p${q.j + 1}${walls.has(q.i + '-' + q.j) ? '' : ' *'}: max ${fmt(q.max / 1e3, 3)} kPa @ ${fmtT(q.tMax)}, min ${fmt(q.min / 1e3, 3)} kPa @ ${fmtT(q.tMin)}`));
     return L.join('\n');
   }
 
@@ -1146,6 +1175,8 @@
 
   function setStatus(kind, text) {
     const st = $('#status'); st.className = 'status ' + (kind || ''); $('#statusText').textContent = text;
+    // grey out results that no longer match the inputs
+    document.body.classList.toggle('results-stale', S.stale && kind !== 'busy' && $('#kpis').children.length > 0);
   }
 
   function run() {
