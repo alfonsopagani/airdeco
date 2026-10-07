@@ -233,6 +233,7 @@ details.more > .fields { margin-top: 8px; }
 .kpi .v { font: 600 26px/1.15 var(--f-display); font-variant-numeric: tabular-nums; }
 .kpi .v small { font-size: 14px; font-weight: 500; color: var(--ink-2); margin-left: 3px; }
 .kpi .d { font-size: 12px; color: var(--muted); }
+.kpi .d2 { font-size: 11px; font-style: italic; }
 .kpi.alert { border-color: color-mix(in srgb, var(--crit) 45%, var(--line)); }
 .kpi.alert .v { color: var(--crit); }
 
@@ -284,6 +285,8 @@ table.data td .sw { display: inline-block; width: 9px; height: 9px; border-radiu
 table.data td.hot { color: var(--crit); font-weight: 600; }
 .matrix td { text-align: center !important; }
 .matrix td.diag { color: var(--muted); }
+.matrix td.nowall { color: var(--muted); font-style: italic; }
+body.results-stale #kpis, body.results-stale #validate, body.results-stale #charts, body.results-stale #tComp, body.results-stale #tVent, body.results-stale #tPair { opacity: .45; filter: grayscale(.6); transition: opacity .2s; }
 .subtabs { display: flex; gap: 2px; padding: 8px 14px 0; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
 .subtabs button { border: 0; background: transparent; padding: 8px 12px; cursor: pointer; font: 600 13px var(--f-display); letter-spacing: .03em; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
 .subtabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--accent); }
@@ -385,7 +388,7 @@ footer a { color: var(--accent); }
     <details class="panel" open id="secComp">
       <summary><span class="step">3</span><h2>Compartments</h2><span class="meta" id="metaComp"></span><span class="chev">›</span></summary>
       <div class="panel-body">
-        <p class="note">Each compartment is a control volume of constant size. Deck and station (% of fuselage length) only place it on the schematic.</p>
+        <p class="note">Each compartment is a control volume of constant size. Deck and station (% of fuselage length) place it on the schematic and tell the tool which compartments share a wall.</p>
         <div class="items" id="compList"></div>
         <div class="row-actions">
           <button class="btn small" id="addComp">+ Add compartment</button>

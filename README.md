@@ -104,8 +104,8 @@ Each card is one control volume. Up to 8 compartments are allowed.
 |---|---|---|
 | Name | – | Label used in the schematic, charts and tables. |
 | **Volume** | m³ | Net air volume of the compartment. This is the only compartment property that enters the physics. |
-| Deck | – | *Main deck*, *Lower deck* (cargo/bilge) or *Full height*. Schematic placement only. |
-| Station from / to | % | Start and end of the compartment along the fuselage, as a percentage of its length. Schematic placement only. |
+| Deck | – | *Main deck*, *Lower deck* (cargo/bilge) or *Full height*. Places the compartment on the schematic and defines which compartments share a wall. |
+| Station from / to | % | Start and end of the compartment along the fuselage, as a percentage of its length. Used for the schematic and for wall sharing, like *Deck*. |
 | Initial p, Initial T *(optional)* | kPa, °C | Override the cabin initial state for this compartment (for example an unheated hold). Leave blank to use the cabin values. |
 | Supply inflow | kg/s | Constant mass flow added to the compartment from *t* = 0, e.g. pressurization or emergency repressurization air (Eq. 1 of the paper). Use 0 for none. |
 
@@ -173,7 +173,7 @@ Panel inertia matters: in the paper's two-compartment case a hinged panel (40.8 
 ## 5. Running the analysis
 
 - Press **Run analysis**, or just edit an input when *Re-run automatically* is on.
-- The status line reports the number of steps, the run time, why the run stopped and how many points were stored. Its dot is green when results are current, amber when inputs changed since the last run, and red on errors.
+- The status line reports the number of steps, the run time, why the run stopped and how many points were stored. Its dot is green when results are current, amber when inputs changed since the last run, and red on errors. While results are out of date, the key results, charts and tables are greyed out until the next run.
 - Invalid input (for example a vent connecting a compartment to itself, or a zero volume) stops the run and shows a red message that names the item to fix. A field left empty is outlined in red and ignored until it holds a number.
 - An amber note warns when a compartment has no vent path to the ambient (it stays pressurized), when no breach exists, or when pressures have not equalised before the maximum time.
 
@@ -193,7 +193,7 @@ A side view of the fuselage with each compartment drawn at its deck and stations
 
 | Tile | Definition |
 |---|---|
-| **Peak differential** | Largest \|*p*_i − *p*_j\| between any two compartments, with the pair and time. This is the governing decompression load for partitions and floors. |
+| **Peak differential** | Largest \|*p*_i − *p*_j\| across a partition, with the pair and time. This is the governing decompression load for partitions and floors. Only pairs separated by a real partition count: compartments joined by a vent, or sharing a wall in the layout (deck and stations). If two compartments with no common wall have a larger difference (for example cockpit and cabin with an entryway between them), it is noted below the value, because that difference is split across the partitions in between. |
 | **Total decompression time** | Time when every compartment is within the tolerance of ambient pressure. |
 | **Supercritical phase** | Time until every compartment falls below *p*\* = 1.893 *p*ₐ (definition of Tables 1–2 of the paper). The time during which the breach throat itself is choked is shown below. |
 | **Lowest air temperature** | Minimum temperature reached in any compartment (the isentropic model gives the lowest possible value, since condensation and wall heat transfer are neglected). |
@@ -227,7 +227,7 @@ Interaction:
 
 - **Compartments:** volume, initial pressure, temperature and mass, minimum pressure, temperature and density, maximum depressurization rate and its time, peak cabin altitude, and the time the compartment reaches ambient pressure.
 - **Vents & panels:** effective area, peak positive and negative Δp with times (the governing internal value is highlighted), peak mass flow, maximum Mach number, choked duration, net mass transferred, panel release time, opening time (release to full area) and peak partition load.
-- **Δp matrix:** peak \|*p*_i − *p*_j\| for every pair of compartments, shaded by magnitude.
+- **Δp matrix:** peak \|*p*_i − *p*_j\| for every pair of compartments. Pairs separated by a partition are shaded by magnitude; pairs with no common wall are shown in brackets.
 
 ## 7. Saving, loading and exporting
 
