@@ -193,7 +193,7 @@ A side view of the fuselage with each compartment drawn at its deck and stations
 
 | Tile | Definition |
 |---|---|
-| **Peak differential** | Largest \|*p*_i − *p*_j\| across a partition, with the pair and time. This is the governing decompression load for partitions and floors. Only pairs separated by a real partition count: compartments joined by a vent, or sharing a wall in the layout (deck and stations). If two compartments with no common wall have a larger difference (for example cockpit and cabin with an entryway between them), it is noted below the value, because that difference is split across the partitions in between. |
+| **Peak differential** | Largest \|*p*_i − *p*_j\| across a partition, with the pair and time. This is the governing decompression load for partitions and floors. Only pairs separated by a real partition count: compartments joined by a vent, or sharing a wall in the layout (deck and stations). Pairs with no common wall (for example cockpit and cabin with an entryway between them) are excluded, because their difference is split across the partitions in between; they remain visible in brackets in the Δp matrix. |
 | **Total decompression time** | Time when every compartment is within the tolerance of ambient pressure. |
 | **Supercritical phase** | Time until every compartment falls below *p*\* = 1.893 *p*ₐ (definition of Tables 1–2 of the paper). The time during which the breach throat itself is choked is shown below. |
 | **Lowest air temperature** | Minimum temperature reached in any compartment (the isentropic model gives the lowest possible value, since condensation and wall heat transfer are neglected). |

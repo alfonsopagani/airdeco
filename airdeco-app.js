@@ -993,7 +993,6 @@
     const r = S.result, sm = r.summary, N = r.comp.length;
     const walls = wallPairs();
     const best = peakPair(sm.pairs.filter((q) => walls.has(q.i + '-' + q.j)));
-    const bestAny = peakPair(sm.pairs);
     const cTmin = sm.compartments.reduce((a, c, i) => (c.TMin < a.v ? { v: c.TMin, i } : a), { v: Infinity, i: 0 });
     const altMax = Math.max(...sm.compartments.map((c) => c.altMax));
     const breach = sm.vents.filter((v) => v.b < 0);
@@ -1001,9 +1000,7 @@
     const loads = sm.vents.filter((v) => isFinite(v.loadMax));
     const tiles = [];
     if (N > 1 && best) {
-      let d = `Peak differential across a partition, ${pairLabel(best)} at ${fmtT(best.t)}`;
-      if (bestAny && bestAny.q !== best.q && bestAny.v > best.v * 1.001) d += `<br><span class="d2">${pairLabel(bestAny)} reaches ${fmt(pU(bestAny.v), 2)}, no shared wall</span>`;
-      tiles.push({ alert: true, v: fmt(pU(best.v), 2), u: pLbl(), d });
+      tiles.push({ alert: true, v: fmt(pU(best.v), 2), u: pLbl(), d: `Peak differential across a partition, ${pairLabel(best)} at ${fmtT(best.t)}` });
     }
     tiles.push({ v: isFinite(sm.tEqualised) ? fmt(sm.tEqualised, sm.tEqualised < 1 ? 4 : 3) : '> ' + fmt(sm.tFinal, 2), u: 's', d: 'Total decompression time' });
     tiles.push({ v: (sm.supercriticalEnded ? '' : '> ') + fmt(sm.tSupercritical, sm.tSupercritical < 1 ? 4 : 3), u: 's', d: `Supercritical phase · breach choked ${fmtT(sm.tChokedBreach)}` });
